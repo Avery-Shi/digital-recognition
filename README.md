@@ -16,10 +16,7 @@ digital-recognition/
 ├── app.py                  # Flask 后端应用(模型加载、图像预处理、API接口)
 ├── train_model.py          # 模型训练脚本(数据增强、训练循环、模型保存)
 ├── requirements.txt        # Python 依赖包
-├── .gitignore             # Git 忽略规则
-├── data/                   # 数据存储目录
-│   ├── MNIST/             # MNIST 数据集(自动下载)
-│   └── digit_recognition_cnn.pth  # 训练后的模型权重
+├── digit_recognition_cnn.pth  # 训练后的模型权重              
 └── templates/              # 前端页面模板
     ├── index.html         # 默认蓝色主题界面
     ├── index_new.html     # 现代渐变紫色主题界面
