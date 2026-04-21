@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Digit Recognition - View 1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #e0e0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            color: #a0a0ff;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.7);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(100, 100, 255, 0.4);
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #00dbde;
+            text-align: center;
+            position: relative;
+        }
+
+        .panel-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            margin: 8px auto 0;
+            border-radius: 2px;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(10, 10, 30, 0.8);
+            border: 2px solid rgba(100, 100, 255, 0.5);
+            border-radius: 10px;
+            margin: 20px 0;
+            cursor: crosshair;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(rgba(100, 100, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 100, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        #predictBtn {
+            background: linear-gradient(45deg, #00dbde, #fc00ff);
+            color: white;
+        }
+
+        #clearBtn {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            color: white;
+        }
+
+        .result-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .prediction {
+            font-size: 100px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(0, 219, 222, 0.3);
+        }
+
+        .confidence {
+            font-size: 1.5rem;
+            color: #a0a0ff;
+            margin-bottom: 30px;
+        }
+
+        .probabilities {
+            margin-top: 20px;
+        }
+
+        .probability-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .digit-label {
+            width: 30px;
+            font-weight: bold;
+            color: #00dbde;
+            font-size: 1.2rem;
+        }
+
+        .probability-bar-container {
+            flex: 1;
+            height: 20px;
+            background: rgba(100, 100, 255, 0.2);
+            border-radius: 10px;
+            margin: 0 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .probability-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            border-radius: 10px;
+            min-width: 0;
+            transition: width 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .probability-text {
+            width: 60px;
+            text-align: right;
+            font-weight: bold;
+            color: #e0e0ff;
+        }
+
+        .input-image-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .input-image-title {
+            font-size: 1.2rem;
+            color: #00dbde;
+            margin-bottom: 15px;
+        }
+
+        #inputCanvas {
+            border: 2px solid rgba(100, 100, 255, 0.5);
+            border-radius: 5px;
+            background: rgba(10, 10, 30, 0.8);
+        }
+
+        .instructions {
+            text-align: center;
+            color: #a0a0ff;
+            margin: 20px 0;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        .neural-network-visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            height: 100px;
+        }
+
+        .neuron {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #00dbde;
+            margin: 0 5px;
+            animation: pulse 2s infinite;
+        }
+
+        .neuron:nth-child(2) { animation-delay: 0.2s; }
+        .neuron:nth-child(3) { animation-delay: 0.4s; }
+        .neuron:nth-child(4) { animation-delay: 0.6s; }
+        .neuron:nth-child(5) { animation-delay: 0.8s; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .canvas-container {
+                height: 250px;
+            }
+            
+            .prediction {
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NEURAL DIGIT RECOGNITION</h1>
+            <p>Powered by PyTorch & Flask | Advanced AI Recognition System</p>
+        </div>
+
+        <div class="neural-network-visualizer">
+            <div class="neuron"></div>
+            <div class="neuron"></div>
+            <div class="neuron"></div>
+            <div class="neuron"></div>
+            <div class="neuron"></div>
+        </div>
+
+        <div class="grid-container">
+            <div class="panel">
+                <div class="panel-title">DIGITAL CANVAS</div>
+                <p class="instructions">Draw a digit (0-9) on the canvas below</p>
+                
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button id="predictBtn" class="btn">ANALYZE INPUT</button>
+                    <button id="clearBtn" class="btn">CLEAR CANVAS</button>
+                </div>
+
+                <div class="input-image-container">
+                    <div class="input-image-title">PROCESSED INPUT (28×28)</div>
+                    <canvas id="inputCanvas" width="280" height="280"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">ANALYSIS RESULTS</div>
+                
+                <div class="result-display">
+                    <div class="prediction" id="prediction">?</div>
+                    <div class="confidence" id="confidence">Confidence: 0%</div>
+
+                    <div class="probabilities" id="probabilities">
+                        <h3 style="color: #00dbde; margin-bottom: 20px;">DIGIT PROBABILITY DISTRIBUTION</h3>
+                        <!-- Probability bars will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const drawingCtx = drawingCanvas.getContext('2d');
+        const inputCanvas = document.getElementById('inputCanvas');
+        const inputCtx = inputCanvas.getContext('2d');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const predictionEl = document.getElementById('prediction');
+        const confidenceEl = document.getElementById('confidence');
+        const probabilitiesEl = document.getElementById('probabilities');
+
+        // Set canvas size
+        const drawingCanvasSize = 300;
+        drawingCanvas.width = drawingCanvasSize;
+        drawingCanvas.height = drawingCanvasSize;
+
+        // Initialize canvas
+        function initCanvas() {
+            drawingCtx.fillStyle = '#000000'; // 黑色背景
+            drawingCtx.fillRect(0, 0, drawingCanvasSize, drawingCanvasSize);
+            drawingCtx.lineWidth = 25;
+            drawingCtx.lineCap = 'round';
+            drawingCtx.strokeStyle = '#ffffff'; // 白色线条
+            drawingCtx.lineJoin = 'round';
+        }
+
+        initCanvas();
+
+        let isDrawing = false;
+
+        // Get coordinates relative to canvas
+        function getCoordinates(e) {
+            const rect = drawingCanvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type.includes('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                x = touch.clientX - rect.left;
+                y = touch.clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            // 计算相对于实际canvas像素的坐标
+            const scaleX = drawingCanvas.width / rect.width;
+            const scaleY = drawingCanvas.height / rect.height;
+            
+            x = x * scaleX;
+            y = y * scaleY;
+            
+            // Ensure coordinates are within canvas bounds
+            x = Math.max(0, Math.min(x, drawingCanvas.width));
+            y = Math.max(0, Math.min(y, drawingCanvas.height));
+            
+            return { x, y };
+        }
+
+        // Drawing functions
+        function startDrawing(e) {
+            e.preventDefault();
+            isDrawing = true;
+            const { x, y } = getCoordinates(e);
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(x, y);
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                drawingCtx.stroke(); // 确保最后的路径被绘制
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const { x, y } = getCoordinates(e);
+            
+            drawingCtx.lineTo(x, y);
+            drawingCtx.stroke();
+        }
+
+        // Clear canvas
+        function clearCanvas() {
+            initCanvas();
+            inputCtx.fillStyle = '#000000';
+            inputCtx.fillRect(0, 0, inputCanvas.width, inputCanvas.height);
+            predictionEl.textContent = '?';
+            confidenceEl.textContent = 'Confidence: 0%';
+            updateProbabilityDisplay(Array(10).fill(0));
+        }
+
+        // Event listeners
+        drawingCanvas.addEventListener('mousedown', startDrawing);
+        drawingCanvas.addEventListener('mousemove', draw);
+        drawingCanvas.addEventListener('mouseup', stopDrawing);
+        drawingCanvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch support
+        drawingCanvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+
+        drawingCanvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+
+        drawingCanvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+
+        // 监听窗口大小变化事件，重新调整canvas
+        window.addEventListener('resize', function() {
+            // 确保在窗口大小改变时保持正确的绘制
+            // 这里不需要重新设置canvas尺寸，因为我们固定了像素尺寸
+        });
+
+        clearBtn.addEventListener('click', clearCanvas);
+
+        // Preprocess image for model
+        function preprocessImage() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+
+            tempCtx.drawImage(drawingCanvas, 0, 0, 28, 28);
+
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+
+            const grayscaleData = new Array(28 * 28);
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                const idx = i / 4;
+                // 不再反转颜色，保持黑底白字
+                grayscaleData[idx] = gray;
+            }
+
+            showInputImage(grayscaleData);
+
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = 28;
+            outputCanvas.height = 28;
+            const outputCtx = outputCanvas.getContext('2d');
+            const outputImageData = outputCtx.createImageData(28, 28);
+
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const baseIdx = i * 4;
+                outputImageData.data[baseIdx] = grayscaleData[i];
+                outputImageData.data[baseIdx + 1] = grayscaleData[i];
+                outputImageData.data[baseIdx + 2] = grayscaleData[i];
+                outputImageData.data[baseIdx + 3] = 255;
+            }
+
+            outputCtx.putImageData(outputImageData, 0, 0);
+
+            inputCtx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+            inputCtx.drawImage(outputCanvas, 0, 0, inputCanvas.width, inputCanvas.height);
+
+            return outputCanvas.toDataURL('image/png');
+        }
+
+        // Show processed image
+        function showInputImage(grayscaleData) {
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = 28;
+            displayCanvas.height = 28;
+            const displayCtx = displayCanvas.getContext('2d');
+
+            const displayImageData = displayCtx.createImageData(28, 28);
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const baseIdx = i * 4;
+                displayImageData.data[baseIdx] = grayscaleData[i];
+                displayImageData.data[baseIdx + 1] = grayscaleData[i];
+                displayImageData.data[baseIdx + 2] = grayscaleData[i];
+                displayImageData.data[baseIdx + 3] = 255;
+            }
+
+            displayCtx.putImageData(displayImageData, 0, 0);
+
+            inputCtx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+            inputCtx.drawImage(displayCanvas, 0, 0, inputCanvas.width, inputCanvas.height);
+        }
+
+        // Create probability bars
+        function createProbabilityBars() {
+            probabilitiesEl.innerHTML = '<h3 style="color: #00dbde; margin-bottom: 20px;">DIGIT PROBABILITY DISTRIBUTION</h3>';
+            for (let i = 0; i < 10; i++) {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'probability-item';
+                barContainer.innerHTML = `
+                    <div class="digit-label">${i}</div>
+                    <div class="probability-bar-container">
+                        <div class="probability-bar" id="bar${i}" style="width: 0%;"></div>
+                    </div>
+                    <div class="probability-text" id="text${i}">0%</div>
+                `;
+                probabilitiesEl.appendChild(barContainer);
+            }
+        }
+
+        createProbabilityBars();
+
+        // Update probability display
+        function updateProbabilityDisplay(probabilities) {
+            for (let i = 0; i < 10; i++) {
+                const prob = probabilities[i] || 0;
+                const percentage = Math.round(prob * 10000) / 100;
+                const barElement = document.getElementById(`bar${i}`);
+                const textElement = document.getElementById(`text${i}`);
+
+                if (barElement && textElement) {
+                    barElement.style.width = `${percentage}%`;
+                    textElement.textContent = `${percentage}%`;
+                }
+            }
+        }
+
+        // Prediction function
+        predictBtn.addEventListener('click', async function() {
+            try {
+                const imageData = preprocessImage();
+
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert('Recognition failed: ' + data.error);
+                        return;
+                    }
+
+                    predictionEl.textContent = data.prediction;
+                    confidenceEl.textContent = `Confidence: ${data.confidence}%`;
+
+                    if (data.probabilities) {
+                        updateProbabilityDisplay(data.probabilities);
+                    }
+                } else {
+                    alert('Recognition failed, please try again!');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Connection to server failed, please ensure Flask application is running!');
+            }
+        });
+    </script>
+</body>
+</html>

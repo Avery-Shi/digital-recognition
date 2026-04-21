@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手写数字识别系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .panel {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .panel-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .canvas-container {
+            position: relative;
+            margin: 20px auto;
+            width: 300px;
+            height: 300px;
+            border: 3px solid #3498db;
+            background-color: white;
+            cursor: crosshair;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        #predictBtn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        #predictBtn:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        #clearBtn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        #clearBtn:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        
+        .result-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .prediction {
+            font-size: 80px;
+            font-weight: bold;
+            color: #3498db;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .confidence {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .probabilities {
+            margin-top: 20px;
+        }
+        
+        .probability-bar {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            height: 30px;
+        }
+        
+        .digit-label {
+            width: 30px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .bar-container {
+            flex: 1;
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            margin: 0 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+            border-radius: 10px;
+            min-width: 0;
+            transition: width 0.5s ease;
+        }
+        
+        .bar-text {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .input-image {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .input-image-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        #inputCanvas {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            background-color: white;
+        }
+        
+        .drawing-instructions {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>手写数字识别系统</h1>
+            <p>基于Pytorch和Flask的AI手写数字识别应用</p>
+        </div>
+        
+        <div class="content">
+            <div class="left-panel">
+                <div class="panel">
+                    <div class="panel-title">绘制区域</div>
+                    <p class="drawing-instructions">在下方画布中用鼠标绘制一个数字 (0-9)，尽量占满整个画布</p>
+                    
+                    <div class="canvas-container">
+                        <canvas id="drawingCanvas"></canvas>
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="predictBtn">识别数字</button>
+                        <button id="clearBtn">清除画布</button>
+                    </div>
+                    
+                    <div class="input-image">
+                        <div class="input-image-title">模型输入图像 (28x28)</div>
+                        <canvas id="inputCanvas" width="280" height="280"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="panel">
+                    <div class="panel-title">识别结果</div>
+                    
+                    <div class="result-section">
+                        <div class="prediction" id="prediction">-</div>
+                        <div class="confidence" id="confidence">置信度: -%</div>
+                        
+                        <div class="probabilities" id="probabilities">
+                            <h3>各数字概率分布</h3>
+                            <!-- 概率条将在JavaScript中动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const drawingCtx = drawingCanvas.getContext('2d');
+        const inputCanvas = document.getElementById('inputCanvas');
+        const inputCtx = inputCanvas.getContext('2d');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const predictionEl = document.getElementById('prediction');
+        const confidenceEl = document.getElementById('confidence');
+        const probabilitiesEl = document.getElementById('probabilities');
+        
+        // 设置画布大小
+        const drawingCanvasSize = 300;
+        drawingCanvas.width = drawingCanvasSize;
+        drawingCanvas.height = drawingCanvasSize;
+        
+        // 初始化画布
+        function initCanvas() {
+            drawingCtx.fillStyle = 'white';
+            drawingCtx.fillRect(0, 0, drawingCanvasSize, drawingCanvasSize);
+            drawingCtx.lineWidth = 20;
+            drawingCtx.lineCap = 'round';
+            drawingCtx.strokeStyle = 'black';
+            drawingCtx.fillStyle = 'black';
+        }
+        
+        initCanvas();
+        
+        let isDrawing = false;
+        
+        // 获取相对于画布的坐标
+        function getCoordinates(e) {
+            const rect = drawingCanvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type.includes('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                x = touch.clientX - rect.left;
+                y = touch.clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            // 确保坐标在画布范围内
+            x = Math.max(0, Math.min(x, drawingCanvasSize));
+            y = Math.max(0, Math.min(y, drawingCanvasSize));
+            
+            return { x, y };
+        }
+        
+        // 绘制功能
+        function startDrawing(e) {
+            e.preventDefault(); // 防止默认行为
+            isDrawing = true;
+            const { x, y } = getCoordinates(e);
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(x, y);
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+            drawingCtx.beginPath();
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const { x, y } = getCoordinates(e);
+            
+            drawingCtx.lineTo(x, y);
+            drawingCtx.stroke();
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(x, y);
+        }
+        
+        // 清除画布
+        function clearCanvas() {
+            initCanvas();
+            // 清空输入图像显示
+            inputCtx.fillStyle = 'white';
+            inputCtx.fillRect(0, 0, inputCanvas.width, inputCanvas.height);
+            // 重置结果显示
+            predictionEl.textContent = '-';
+            confidenceEl.textContent = '置信度: -%';
+            // 清空概率显示
+            for(let i = 0; i < 10; i++) {
+                const barElement = document.getElementById(`bar${i}`);
+                if(barElement) barElement.style.width = '0%';
+                const textElement = document.getElementById(`text${i}`);
+                if(textElement) textElement.textContent = '0%';
+            }
+        }
+        
+        // 事件监听
+        drawingCanvas.addEventListener('mousedown', startDrawing);
+        drawingCanvas.addEventListener('mousemove', draw);
+        drawingCanvas.addEventListener('mouseup', stopDrawing);
+        drawingCanvas.addEventListener('mouseout', stopDrawing);
+        
+        // 移动端支持
+        drawingCanvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+        
+        drawingCanvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+        
+        drawingCanvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            drawingCanvas.dispatchEvent(mouseEvent);
+        });
+        
+        clearBtn.addEventListener('click', clearCanvas);
+        
+        // 预处理图像以适应模型输入
+        function preprocessImage() {
+            // 创建临时canvas用于处理图像
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+            
+            // 将绘制的图像缩小到28x28
+            tempCtx.drawImage(drawingCanvas, 0, 0, 28, 28);
+            
+            // 获取图像数据
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+            
+            // 转换为灰度并反色（MNIST是白字黑底，我们绘制的是黑字白底）
+            const grayscaleData = new Array(28 * 28);
+            for (let i = 0; i < data.length; i += 4) {
+                // 转换为灰度值
+                const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                // 反色并存储（MNIST格式）
+                const idx = i / 4;
+                grayscaleData[idx] = 255 - gray;
+            }
+            
+            // 显示预处理后的图像
+            showInputImage(grayscaleData);
+            
+            // 转换为base64
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = 28;
+            outputCanvas.height = 28;
+            const outputCtx = outputCanvas.getContext('2d');
+            const outputImageData = outputCtx.createImageData(28, 28);
+            
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const baseIdx = i * 4;
+                outputImageData.data[baseIdx] = grayscaleData[i];     // R
+                outputImageData.data[baseIdx + 1] = grayscaleData[i]; // G
+                outputImageData.data[baseIdx + 2] = grayscaleData[i]; // B
+                outputImageData.data[baseIdx + 3] = 255;             // A
+            }
+            
+            outputCtx.putImageData(outputImageData, 0, 0);
+            
+            // 放大显示在输入图像区域
+            inputCtx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+            inputCtx.drawImage(outputCanvas, 0, 0, inputCanvas.width, inputCanvas.height);
+            
+            return outputCanvas.toDataURL('image/png');
+        }
+        
+        // 显示输入图像
+        function showInputImage(grayscaleData) {
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = 28;
+            displayCanvas.height = 28;
+            const displayCtx = displayCanvas.getContext('2d');
+            
+            const displayImageData = displayCtx.createImageData(28, 28);
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const baseIdx = i * 4;
+                displayImageData.data[baseIdx] = grayscaleData[i];     // R
+                displayImageData.data[baseIdx + 1] = grayscaleData[i]; // G
+                displayImageData.data[baseIdx + 2] = grayscaleData[i]; // B
+                displayImageData.data[baseIdx + 3] = 255;             // A
+            }
+            
+            displayCtx.putImageData(displayImageData, 0, 0);
+            
+            // 放大显示在输入图像区域
+            inputCtx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+            inputCtx.drawImage(displayCanvas, 0, 0, inputCanvas.width, inputCanvas.height);
+        }
+        
+        // 创建概率显示条
+        function createProbabilityBars() {
+            probabilitiesEl.innerHTML = '<h3>各数字概率分布</h3>';
+            for (let i = 0; i < 10; i++) {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'probability-bar';
+                barContainer.innerHTML = `
+                    <div class="digit-label">${i}</div>
+                    <div class="bar-container">
+                        <div class="bar" id="bar${i}" style="width: 0%;"></div>
+                        <div class="bar-text" id="text${i}">0%</div>
+                    </div>
+                `;
+                probabilitiesEl.appendChild(barContainer);
+            }
+        }
+        
+        // 初始化概率条
+        createProbabilityBars();
+        
+        // 更新概率显示
+        function updateProbabilityDisplay(probabilities) {
+            for (let i = 0; i < 10; i++) {
+                const prob = probabilities[i] || 0;
+                const percentage = Math.round(prob * 10000) / 100; // 保留两位小数
+                const barElement = document.getElementById(`bar${i}`);
+                const textElement = document.getElementById(`text${i}`);
+                
+                if (barElement && textElement) {
+                    barElement.style.width = `${percentage}%`;
+                    textElement.textContent = `${percentage}%`;
+                }
+            }
+        }
+        
+        // 预测函数
+        predictBtn.addEventListener('click', async function() {
+            try {
+                // 预处理图像
+                const imageData = preprocessImage();
+                
+                // 发送请求到Flask后端
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        alert('识别失败: ' + data.error);
+                        return;
+                    }
+                    
+                    // 显示主要结果
+                    predictionEl.textContent = data.prediction;
+                    confidenceEl.textContent = `置信度: ${data.confidence}%`;
+                    
+                    // 如果有详细概率信息，则显示
+                    if (data.probabilities) {
+                        updateProbabilityDisplay(data.probabilities);
+                    }
+                } else {
+                    alert('识别失败，请重试！');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('连接服务器失败，请确保Flask应用正在运行！');
+            }
+        });
+    </script>
+</body>
+</html>

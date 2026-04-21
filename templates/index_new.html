@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手写数字识别系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .header h1 { font-size: 1.8em; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { font-size: 0.85em; opacity: 0.9; margin: 0; }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+        }
+        @media (max-width: 968px) {
+            .content { grid-template-columns: 1fr; }
+        }
+        .panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .panel-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: crosshair;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #drawingCanvas { width: 100%; height: 100%; display: block; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .btn {
+            padding: 8px 20px;
+            font-size: 0.9em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4); }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(245, 87, 108, 0.4); }
+        .result-display { text-align: center; padding: 10px; }
+        .prediction-result {
+            font-size: 80px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+            line-height: 1;
+        }
+        .confidence-text { font-size: 1.1em; color: #666; margin-bottom: 15px; }
+        .probability-list { margin-top: 10px; }
+        .probability-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 5px;
+        }
+        .digit-number {
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+        .probability-bar-container {
+            flex: 1;
+            height: 16px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            margin: 0 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .probability-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            min-width: 0;
+        }
+        .probability-percentage {
+            width: 45px;
+            text-align: right;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.8em;
+        }
+        .preview-section { margin-top: 10px; text-align: center; }
+        .preview-title { font-size: 0.95em; color: #555; margin-bottom: 8px; }
+        #previewCanvas { border: 2px solid #667eea; border-radius: 5px; background: white; }
+        .instructions { text-align: center; color: #666; margin-bottom: 10px; line-height: 1.4; font-size: 0.9em; }
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+        }
+        .status-error { background: #fee; color: #c33; border: 1px solid #fcc; }
+        .status-success { background: #efe; color: #3c3; border: 1px solid #cfc; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>🎨 手写数字识别系统</h1>
+            <p>基于深度学习的 AI 识别应用 | 在左侧画布上绘制数字，点击识别按钮即可预测</p>
+        </div>
+
+        <div class="content">
+            <!-- 左侧：绘制区域 -->
+            <div class="panel">
+                <div class="panel-title">✏️ 绘制数字</div>
+                <p class="instructions">
+                    请在下方画布中用鼠标或手指绘制一个数字 (0-9)<br>
+                    尽量让数字占满整个画布，笔画清晰
+                </p>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="drawingCanvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="predictBtn">
+                        🔍 识别数字
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        🗑️ 清除画布
+                    </button>
+                </div>
+
+                <div class="preview-section">
+                    <div class="preview-title">📷 预处理后的图像 (28×28)</div>
+                    <canvas id="previewCanvas" width="140" height="140"></canvas>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <!-- 右侧：结果展示 -->
+            <div class="panel">
+                <div class="panel-title">🎯 识别结果</div>
+                
+                <div class="result-display">
+                    <div style="font-size: 1.2em; color: #666;">预测结果</div>
+                    <div class="prediction-result" id="predictionResult">?</div>
+                    <div class="confidence-text" id="confidenceText">置信度：--%</div>
+                </div>
+
+                <div class="probability-list" id="probabilityList">
+                    <!-- 概率条将由 JavaScript 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取 DOM 元素
+        const drawingCanvas = document.getElementById('drawingCanvas');
+        const drawingCtx = drawingCanvas.getContext('2d');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const predictionResult = document.getElementById('predictionResult');
+        const confidenceText = document.getElementById('confidenceText');
+        const probabilityList = document.getElementById('probabilityList');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // 设置画布大小（固定像素尺寸）
+        const canvasSize = 400;
+        drawingCanvas.width = canvasSize;
+        drawingCanvas.height = canvasSize;
+
+        // 初始化画布（白色背景）
+        function initCanvas() {
+            drawingCtx.fillStyle = 'white';
+            drawingCtx.fillRect(0, 0, canvasSize, canvasSize);
+            drawingCtx.strokeStyle = 'black';
+            drawingCtx.lineWidth = 25;
+            drawingCtx.lineCap = 'round';
+            drawingCtx.lineJoin = 'round';
+        }
+
+        initCanvas();
+
+        // 绘制状态
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 获取相对于画布的坐标
+        function getCoordinates(e) {
+            const rect = drawingCanvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.type.includes('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // 计算实际像素坐标
+            const scaleX = drawingCanvas.width / rect.width;
+            const scaleY = drawingCanvas.height / rect.height;
+
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
+
+            return { x, y };
+        }
+
+        // 开始绘制
+        function startDrawing(e) {
+            e.preventDefault();
+            isDrawing = true;
+            const { x, y } = getCoordinates(e);
+            lastX = x;
+            lastY = y;
+        }
+
+        // 停止绘制
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // 绘制过程
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const { x, y } = getCoordinates(e);
+
+            drawingCtx.beginPath();
+            drawingCtx.moveTo(lastX, lastY);
+            drawingCtx.lineTo(x, y);
+            drawingCtx.stroke();
+
+            lastX = x;
+            lastY = y;
+        }
+
+        // 事件监听
+        drawingCanvas.addEventListener('mousedown', startDrawing);
+        drawingCanvas.addEventListener('mousemove', draw);
+        drawingCanvas.addEventListener('mouseup', stopDrawing);
+        drawingCanvas.addEventListener('mouseout', stopDrawing);
+
+        // 移动端支持
+        drawingCanvas.addEventListener('touchstart', startDrawing);
+        drawingCanvas.addEventListener('touchmove', draw);
+        drawingCanvas.addEventListener('touchend', stopDrawing);
+
+        // 清除画布
+        function clearCanvas() {
+            initCanvas();
+            previewCtx.fillStyle = 'white';
+            previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+            predictionResult.textContent = '?';
+            confidenceText.textContent = '置信度：--%';
+            probabilityList.innerHTML = '';
+            hideStatus();
+        }
+
+        clearBtn.addEventListener('click', clearCanvas);
+
+        // 显示状态消息
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
+            statusMessage.style.display = 'block';
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        function hideStatus() {
+            statusMessage.style.display = 'none';
+        }
+
+        // 预处理图像并发送到后端
+        function preprocessAndPredict() {
+            // 创建临时 canvas 用于缩放到 28x28
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+
+            // 缩小图像到 28x28
+            tempCtx.drawImage(drawingCanvas, 0, 0, 28, 28);
+
+            // 获取像素数据
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+
+            // 转换为灰度图
+            const grayscale = new Array(28 * 28);
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                grayscale[i / 4] = 255 - gray; // 反转为 MNIST 格式（黑底白字）
+            }
+
+            // 显示预览图
+            showPreview(grayscale);
+
+            // 转换为 base64
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = 28;
+            outputCanvas.height = 28;
+            const outputCtx = outputCanvas.getContext('2d');
+            const outputImageData = outputCtx.createImageData(28, 28);
+
+            for (let i = 0; i < grayscale.length; i++) {
+                const idx = i * 4;
+                outputImageData.data[idx] = grayscale[i];
+                outputImageData.data[idx + 1] = grayscale[i];
+                outputImageData.data[idx + 2] = grayscale[i];
+                outputImageData.data[idx + 3] = 255;
+            }
+
+            outputCtx.putImageData(outputImageData, 0, 0);
+            return outputCanvas.toDataURL('image/png');
+        }
+
+        // 显示预览图像
+        function showPreview(grayscale) {
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = 28;
+            displayCanvas.height = 28;
+            const displayCtx = displayCanvas.getContext('2d');
+            const displayImageData = displayCtx.createImageData(28, 28);
+
+            for (let i = 0; i < grayscale.length; i++) {
+                const idx = i * 4;
+                displayImageData.data[idx] = grayscale[i];
+                displayImageData.data[idx + 1] = grayscale[i];
+                displayImageData.data[idx + 2] = grayscale[i];
+                displayImageData.data[idx + 3] = 255;
+            }
+
+            displayCtx.putImageData(displayImageData, 0, 0);
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCtx.drawImage(displayCanvas, 0, 0, previewCanvas.width, previewCanvas.height);
+        }
+
+        // 创建概率条
+        function createProbabilityBars() {
+            probabilityList.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const item = document.createElement('div');
+                item.className = 'probability-item';
+                item.innerHTML = `
+                    <div class="digit-number">${i}</div>
+                    <div class="probability-bar-container">
+                        <div class="probability-bar" id="bar${i}" style="width: 0%;"></div>
+                    </div>
+                    <div class="probability-percentage" id="percent${i}">0%</div>
+                `;
+                probabilityList.appendChild(item);
+            }
+        }
+
+        // 更新概率显示
+        function updateProbabilities(probabilities) {
+            for (let i = 0; i < 10; i++) {
+                const prob = probabilities[i] || 0;
+                const percentage = (prob * 100).toFixed(2);
+                const bar = document.getElementById(`bar${i}`);
+                const percentText = document.getElementById(`percent${i}`);
+
+                if (bar && percentText) {
+                    bar.style.width = `${percentage}%`;
+                    percentText.textContent = `${percentage}%`;
+                }
+            }
+        }
+
+        // 识别按钮点击事件
+        predictBtn.addEventListener('click', async function() {
+            try {
+                // 禁用按钮防止重复点击
+                predictBtn.disabled = true;
+                predictBtn.innerHTML = '<span class="loading"></span>识别中...';
+
+                // 预处理图像
+                const imageData = preprocessAndPredict();
+
+                // 发送请求到后端
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: imageData
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('网络响应失败');
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // 显示结果
+                predictionResult.textContent = data.prediction;
+                confidenceText.textContent = `置信度：${data.confidence}%`;
+
+                // 创建并更新概率条
+                if (!probabilityList.children.length) {
+                    createProbabilityBars();
+                }
+                updateProbabilities(data.probabilities);
+
+                showStatus('✅ 识别成功！', false);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('❌ 识别失败：' + error.message, true);
+                predictionResult.textContent = '?';
+                confidenceText.textContent = '置信度：--%';
+            } finally {
+                // 恢复按钮状态
+                predictBtn.disabled = false;
+                predictBtn.innerHTML = '🔍 识别数字';
+            }
+        });
+
+        // 初始化概率条
+        createProbabilityBars();
+    </script>
+</body>
+</html>
