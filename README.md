@@ -1,126 +1,126 @@
-# Handwritten Digit Recognition System
+# 手写数字识别系统
 
-A deep learning-based handwritten digit recognition system built with PyTorch and Flask, featuring a three-layer CNN architecture that achieves over 98% accuracy on the MNIST dataset.
+基于 PyTorch 和 Flask 构建的深度学习手写数字识别系统,采用三层 CNN 架构在 MNIST 数据集上实现超过 98% 的准确率。
 
-## Features
+## 功能特点
 
-- **Deep Learning Model**: Three-layer CNN (32→64→128 channels) with max pooling, dropout regularization, and fully connected layers
-- **Smart Image Preprocessing**: Automatic centering, size normalization, and MNIST standardization for consistent inference
-- **Real-time Inference**: RESTful API supporting Base64 encoded images with prediction results and confidence scores
-- **Multiple UI Themes**: Four different frontend interfaces with responsive design and touch support
-- **One-click Setup**: Automated dependency checking, model training, and service startup
+- **深度学习模型**: 三层卷积神经网络(32→64→128通道),结合最大池化、Dropout 正则化和全连接层
+- **智能图像预处理**: 自动居中、尺寸归一化和 MNIST 标准化处理,确保推理一致性
+- **实时推理**: RESTful API 支持 Base64 编码图像输入,返回预测结果和置信度评分
+- **一键部署**: 自动化依赖检查、模型训练和服务启动流程
 
-## Project Structure
+## 项目结构
 
 ```
 digital-recognition/
-├── app.py                  # Flask backend application
-├── train_model.py          # Model training script
-├── requirements.txt        # Python dependencies
-├── .gitignore             # Git ignore rules
-├── data/                   # Data directory
-│   └── .gitkeep           # Keep directory in git
-└── templates/              # HTML templates
-    ├── index.html         # Default blue theme
-    ├── index_new.html     # Modern gradient purple theme
-    ├── view1.html         # Dark sci-fi style
-    └── view2.html         # Retro green terminal style
+├── app.py                  # Flask 后端应用(模型加载、图像预处理、API接口)
+├── train_model.py          # 模型训练脚本(数据增强、训练循环、模型保存)
+├── requirements.txt        # Python 依赖包
+├── .gitignore             # Git 忽略规则
+├── data/                   # 数据存储目录
+│   ├── MNIST/             # MNIST 数据集(自动下载)
+│   └── digit_recognition_cnn.pth  # 训练后的模型权重
+└── templates/              # 前端页面模板
+    ├── index.html         # 默认蓝色主题界面
+    ├── index_new.html     # 现代渐变紫色主题界面
+    ├── view1.html         # 深色科幻风格界面
+    └── view2.html         # 复古绿色终端风格界面
 ```
 
-## Quick Start
+## 快速开始
 
-### Prerequisites
+### 环境要求
 
 - Python 3.7+
 - PyTorch 1.9+
 - Flask 2.0+
 
-### Installation
+### 安装步骤
 
-1. **Create virtual environment (recommended)**
+1. **创建虚拟环境(推荐)**
 ```bash
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 source .venv/bin/activate  # Linux/Mac
 ```
 
-2. **Install dependencies**
+2. **安装依赖**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Train the model**
+3. **训练模型**
 ```bash
 python train_model.py
 ```
-The MNIST dataset (~100MB) will be downloaded automatically. The trained model is saved to `./data/digit_recognition_cnn.pth`.
+系统将自动下载 MNIST 数据集(约 100MB),训练完成后模型保存在 `./data/digit_recognition_cnn.pth`。
 
-4. **Start the web application**
+4. **启动 Web 服务**
 ```bash
 python app.py
 ```
 
-5. **Access the interface**
+5. **访问界面**
 
-Open your browser and navigate to:
-- `http://localhost:5000` - Default interface
-- `http://localhost:5000/new` - Modern interface (recommended)
-- `http://localhost:5000/view1` - Sci-fi style
-- `http://localhost:5000/view2` - Retro terminal style
+浏览器打开以下地址:
+- `http://localhost:5000` - 默认界面
+- `http://localhost:5000/new` - 现代界面(推荐)
+- `http://localhost:5000/view1` - 科幻风格
+- `http://localhost:5000/view2` - 复古终端风格
 
-## Technical Details
+## 技术细节
 
-### Tech Stack
+### 技术栈
 
-- **Deep Learning**: PyTorch 1.9+
-- **Web Framework**: Flask 2.0+
-- **Image Processing**: Pillow, NumPy
-- **Data Transformation**: torchvision.transforms
+- **深度学习框架**: PyTorch 1.9+
+- **Web 框架**: Flask 2.0+
+- **图像处理**: Pillow, NumPy
+- **数据变换**: torchvision.transforms
 
-### Model Architecture
+### 模型架构
 
 ```
-Input (1×28×28)
+输入层 (1×28×28)
   ↓
-Conv2d(1→32, 3×3) + ReLU + MaxPool(2×2)  [14×14]
+Conv2d(1→32, 3×3) + ReLU + MaxPool(2×2)  [输出: 14×14]
   ↓
-Conv2d(32→64, 3×3) + ReLU + MaxPool(2×2)  [7×7]
+Conv2d(32→64, 3×3) + ReLU + MaxPool(2×2)  [输出: 7×7]
   ↓
-Conv2d(64→128, 3×3) + ReLU + MaxPool(2×2)  [3×3]
+Conv2d(64→128, 3×3) + ReLU + MaxPool(2×2)  [输出: 3×3]
   ↓
 Flatten(1152) → FC(128) + ReLU + Dropout(0.5)
   ↓
 FC(10) → LogSoftmax
 ```
 
-**Training Configuration**:
-- Optimizer: Adam (lr=0.001, weight_decay=1e-4)
-- Loss Function: CrossEntropyLoss
-- Batch Size: 64
-- Epochs: 15
-- Data Augmentation: Random rotation (±10°), random translation (±10%)
+**训练配置**:
+- 优化器: Adam (学习率=0.001, 权重衰减=1e-4)
+- 损失函数: CrossEntropyLoss
+- 批次大小: 64
+- 训练轮数: 15
+- 数据增强: 随机旋转(±10°)、随机平移(±10%)
 
-### Image Preprocessing Pipeline
+### 图像预处理流程
 
-1. Base64 decode → PIL grayscale conversion
-2. Bilinear interpolation resize to 28×28
-3. Threshold segmentation (>50) to extract digit bounding box
-4. Crop and center placement on 28×28 canvas
-5. Convert to Tensor and normalize to [0,1]
-6. MNIST normalization: `(x - 0.1307) / 0.3081`
+1. Base64 解码 → PIL 灰度图转换
+2. 双线性插值缩放到 28×28
+3. 阈值分割(>50)提取数字边界框
+4. 裁剪并居中放置到 28×28 画布
+5. 转换为 Tensor 并归一化到 [0,1]
+6. MNIST 标准化: `(x - 0.1307) / 0.3081`
 
-### API Endpoint
+### API 接口
 
 **POST /predict**
 
-Request:
+请求格式:
 ```json
 {
   "image": "data:image/png;base64,iVBORw0KGgo..."
 }
 ```
 
-Response:
+响应格式:
 ```json
 {
   "prediction": 7,
@@ -129,30 +129,30 @@ Response:
 }
 ```
 
-## Usage
+## 使用说明
 
-1. Navigate to any interface (recommend `/new`)
-2. Draw a digit (0-9) on the canvas using mouse or touch
-3. Click "Recognize" button
-4. View prediction result, confidence score, and probability distribution
-5. Click "Clear" to redraw
+1. 访问任意界面(推荐 `/new`)
+2. 使用鼠标或触摸屏在画布上绘制数字(0-9)
+3. 点击"识别"按钮
+4. 查看预测结果、置信度和概率分布
+5. 点击"清除"重新绘制
 
-## Key Modules
+## 核心模块
 
 ### app.py
 
-- **Net class**: CNN network architecture (consistent with training)
-- **preprocess_image()**: Image preprocessing with centering and normalization
-- **Routes**: Multiple UI endpoints and prediction API
+- **Net 类**: CNN 网络架构定义(与训练保持一致)
+- **preprocess_image()**: 图像预处理函数(居中、归一化、标准化)
+- **路由定义**: 多个前端页面入口和预测 API 接口
 
 ### train_model.py
 
-- **Data Loading**: Automatic MNIST download with augmentation
-- **Net class**: Three-layer CNN model definition
-- **train()/test()**: Training and evaluation functions
-- **Auto-save**: Saves best model weights based on accuracy
+- **数据加载**: 自动下载 MNIST 数据集并应用数据增强
+- **Net 类**: 三层 CNN 模型定义
+- **train()/test()**: 训练和评估函数
+- **自动保存**: 根据准确率保存最优模型权重
 
-## Dependencies
+## 依赖包
 
 ```txt
 torch>=1.9.0
@@ -163,44 +163,44 @@ pillow>=8.3.0
 matplotlib>=3.4.0
 ```
 
-## Performance
+## 性能指标
 
-- **Test Accuracy**: >98%
-- **Inference Time**: <50ms per image (CPU)
-- **Model Size**: ~5MB
-- **Input Support**: Mouse and touch screen
+- **测试准确率**: >98%
+- **推理时间**: <50ms/张(CPU)
+- **模型大小**: ~5MB
+- **输入支持**: 鼠标和触摸屏
 
-## Notes
+## 注意事项
 
-1. First run requires downloading MNIST dataset (~100MB)
-2. Training time varies by hardware, typically 5-15 minutes
-3. Draw digits centered and filling the canvas for best results
-4. Ensure `./data` directory has write permissions
-5. Recommended browsers: Chrome, Firefox, Edge
+1. 首次运行需下载 MNIST 数据集(约 100MB)
+2. 训练时间因硬件而异,通常 5-15 分钟
+3. 绘制时尽量居中且填满画布以获得最佳效果
+4. 确保 `./data` 目录有写入权限
+5. 推荐使用浏览器: Chrome、Firefox、Edge
 
-## Troubleshooting
+## 常见问题
 
-**Q: Model file not found?**  
-A: Run `python train_model.py` to train the model, or check `data/` directory permissions
+**Q: 找不到模型文件?**  
+A: 运行 `python train_model.py` 训练模型,或检查 `data/` 目录权限
 
-**Q: Low recognition accuracy?**  
-A: Ensure clear drawing, centered digit, and adequate stroke thickness
+**Q: 识别准确率低?**  
+A: 确保绘制清晰、数字居中且笔画粗细适中
 
-**Q: Port already in use?**  
-A: Modify the port parameter in `app.py` line 167
+**Q: 端口被占用?**  
+A: 修改 `app.py` 第 135 行的端口参数
 
-## Future Enhancements
+## 未来扩展
 
-- Add model visualization (TensorBoard)
-- Support batch image upload
-- Integrate additional datasets (e.g., EMNIST)
-- Deploy as Docker container
-- Add user authentication and history tracking
+- 添加模型可视化(TensorBoard)
+- 支持批量图片上传
+- 集成更多数据集(如 EMNIST)
+- Docker 容器化部署
+- 添加用户认证和历史记录追踪
 
-## License
+## 许可证
 
-This project is for educational and research purposes only.
+本项目仅供教育和研究用途。
 
 ---
 
-**Note**: This project demonstrates a complete deep learning application workflow including data preparation, model design, training optimization, and web deployment.
+**说明**: 本项目展示了完整的深度学习应用工作流,包括数据准备、模型设计、训练优化和 Web 部署。
